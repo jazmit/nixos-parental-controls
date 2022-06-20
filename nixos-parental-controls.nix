@@ -10,6 +10,9 @@ let
   # python script that controls the DNS proxy
   startDNSProxy = let
 
+    ads-hosts   = builtins.fetchurl "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts";
+    adult-hosts = builtins.fetchurl "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts";
+
     # Convert nixos module options into configuration files for the blocky DNS service
     mkBlockyConfig = name: thisCfg: (pkgs.writeText name ''
       upstream:
@@ -26,7 +29,22 @@ let
           clientGroupsBlock:
             default:
               - myWhitelist
-      '' else ""
+      '' else ''
+        blocking:
+          blackLists:
+            ads:
+              - ${ads-hosts}
+            adult:
+              - ${adult-hosts}
+            custom:
+              - |
+        ${builtins.concatStringsSep "\n" (map (d: "        " + d) thisCfg.blacklist)}
+          clientGroupsBlock:
+            default:
+              - custom
+              ${ if (thisCfg.block-ads) then "- ads" else "" }
+              ${ if (thisCfg.block-adult) then "- adult" else "" }
+      ''
       }
     '');
 
@@ -70,6 +88,13 @@ let
         default = [];
         description = ''
           Whitelist of sites to be allowed. Surround with '/' to do a regex match
+        '';
+      };
+      blacklist = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = ''
+          Blacklist of sites to be blocked. Surround with '/' to do a regex match
         '';
       };
       block-ads = mkOption {
