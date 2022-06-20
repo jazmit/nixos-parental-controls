@@ -6,7 +6,7 @@ If you want to give young children access to your NixOS desktop machines, this m
 
 ## What does it do?
 
-It allows you to set different parental controls on a per-user basis.  For example, in the example below `child1` (this is their username) is restricted to a whitelist of educational sites, `child2` just has a blacklist of known adult sites and ad-serving domains blocked and all other users just block ads.
+It allows you to set different parental controls on a per-user basis.  For example, in the example below `child1` (this is their username) is restricted to a whitelist of educational sites, `child2` just has a blacklist of known adult sites and youtube and all users have ads blocked.
 
 ## How do I use it?
 
@@ -28,18 +28,21 @@ As a NixOS module:
         whitelist = [
           "/numbots/"
           "/ttrockstars/"
-          "/googleapis/"
-          "/cloudflare/"
           "/lichess/"
-          "/prismatic.io/"
-          "/gstatic.com/"
           "/typingclub.com/"
+          "/cloudflare/"
+          "/googleapis/"
+          "/gstatic.com/"
+          "/prismatic.io/"
           "/hs-scripts.com/"
         ];
       };
       child2 = {
         mode = "blacklist";
         block-adult = true;
+        blacklist = [
+            "/youtube/"
+        ];
       };
     };
   };
@@ -48,7 +51,9 @@ As a NixOS module:
 
 # How does it work?
 
-We run the Blocky DNS proxy server locally and restart it with different configurations when different users log in or out.  Therefore it won't work well for a system where multiple users log on simultaneously.  The module sets `networking.nameservers` so you might want to be careful if you have complex network setup.
+We run the Blocky DNS proxy server locally and restart it with different configuration files as different users log in or out.  Therefore it won't work well for a system where multiple users log on simultaneously.  The module sets `networking.nameservers` so you might want to be careful if you have complex network setup.
+
+The blacklists for the `block-ads` and `block-adult` options come from Steven Black's [hosts project](https://github.com/StevenBlack/hosts).
 
 # TODO
 
