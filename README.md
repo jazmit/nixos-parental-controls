@@ -1,8 +1,8 @@
-# Nixos Parental Controls
+# NixOS Parental Controls
 
 ## Who is it for?
 
-If you want to give young children access to your Nixos desktop machines, this might be useful for you.
+If you want to give young children access to your NixOS desktop machines, this might be useful for you.
 
 ## What does it do?
 
@@ -10,7 +10,7 @@ It allows you to set different parental controls on a per-user basis.  For examp
 
 ## How do I use it?
 
-As a Nixos module:
+As a NixOS module:
 
 ````nix
 { config, pkgs, lib, ... }: {
@@ -48,7 +48,7 @@ As a Nixos module:
 
 # How does it work?
 
-Since per-user network settings are a little knarly on linux, we use the blocky DNS server and restart it with different configurations when different users log in or out.  Therefore it won't work well for a system where multiple users log on simultaneously.
+We run the Blocky DNS proxy server locally and restart it with different configurations when different users log in or out.  Therefore it won't work well for a system where multiple users log on simultaneously.  The module sets `networking.nameservers` so you might want to be careful if you have complex network setup.
 
 # TODO
 
