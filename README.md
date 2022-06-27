@@ -17,7 +17,6 @@ As a NixOS module:
   imports = [ ./nixos-parental-controls/nixos-parental-controls.nix ];
   services.parental-controls = {
     enable = true;
-    upstream-dns = ["1.1.1.1" "8.8.8.8"];
     default = {
       mode = "blacklist";
       block-ads = true;
@@ -51,9 +50,10 @@ As a NixOS module:
 
 # How does it work?
 
-We run the Blocky DNS proxy server locally and restart it with different configuration files as different users log in or out.  Therefore it won't work well for a system where multiple users log on simultaneously.  The module sets `networking.nameservers` so you might want to be careful if you have complex network setup.
+We run the Blocky DNS proxy server locally and restart it with different configuration files as different users log in or out.  Therefore it won't work well for a system where multiple users log on simultaneously.  The module sets `networking.nameservers` so you might want to be careful if you have complex network setup. Also, the default upstream DNS servers use the CloudFlare and Google DNS, please use the `services.parental-controls.upstream-dns` option to set a different upstream.
 
 The blacklists for the `block-ads` and `block-adult` options come from Steven Black's [hosts project](https://github.com/StevenBlack/hosts).
+
 
 # TODO
 
