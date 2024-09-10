@@ -12,12 +12,15 @@ stdenv.mkDerivation {
       pp.dbus-python
     ]))
   ];
+  nativeBuildInputs = [ pkgs.gobject-introspection ];
   unpackPhase = "true";
   # The following is purely to make blocky available in $PATH for the proxy
+  # ... and now also to set GI_TYPELIB_PATH to allow it to work!
   installPhase = ''
     mkdir -p $out/bin
     cp ${./per-user-blocky.py} $out/per-user-blocky.py
     echo "#!/usr/bin/env bash" > $out/bin/per-user-blocky
+    echo "export GI_TYPELIB_PATH=$GI_TYPELIB_PATH" >> $out/bin/per-user-blocky
     echo PATH="PATH:${blocky}/bin" $out/per-user-blocky.py '"$@"' >> $out/bin/per-user-blocky
     chmod +x $out/per-user-blocky.py
     chmod +x $out/bin/per-user-blocky
