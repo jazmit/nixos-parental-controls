@@ -7,7 +7,7 @@ with pkgs;
 stdenv.mkDerivation {
   name = "per-user-blocky";
   buildInputs = [
-    (python39.withPackages (pp: [
+    (python3.withPackages (pp: [
       pp.pygobject3
       pp.dbus-python
     ]))
