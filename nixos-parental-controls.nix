@@ -10,8 +10,14 @@ let
   # python script that controls the DNS proxy
   startDNSProxy = let
 
-    ads-hosts   = builtins.fetchurl "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts";
-    adult-hosts = builtins.fetchurl "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts";
+    ads-hosts   = pkgs.fetchurl {
+      url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts";
+      sha256 = "13m33rfx5rg3n6h8p2wk7qpzpi159dkdnp0jchk46r3v6iv4vnh6";
+    };
+    adult-hosts = pkgs.fetchurl {
+      url = "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts";
+      sha256 = "17rjvhcf1ivmhr457xyka848s3zhgp0x5bngpjc08zh4z9gr56kv";
+    };
 
     # Convert nixos module options into configuration files for the blocky DNS service
     mkBlockyConfig = name: thisCfg: (pkgs.writeText name ''
