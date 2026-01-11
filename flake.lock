@@ -3,11 +3,11 @@
     "black-hosts": {
       "flake": false,
       "locked": {
-        "lastModified": 1765843260,
-        "narHash": "sha256-1U945FYnNYi/eYpPqMFCTUHGlK1hrkxPJKlKhG0CJmU=",
+        "lastModified": 1768071736,
+        "narHash": "sha256-2G2q6XaDqZAIpBIR0U/k5r1XallUPjpyT5LomozOFIY=",
         "owner": "StevenBlack",
         "repo": "hosts",
-        "rev": "24c51b8cc056f44c7db8a2c69a4da6af83d28731",
+        "rev": "42f8f2313c81f9fb54c3ed4322c2f2307d820b97",
         "type": "github"
       },
       "original": {
@@ -18,16 +18,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1765779637,
-        "narHash": "sha256-KJ2wa/BLSrTqDjbfyNx70ov/HdgNBCBBSQP3BIzKnv4=",
+        "lastModified": 1768028080,
+        "narHash": "sha256-50aDK+8eLvsLK39TzQhKNq50/HcXyP4hyxOYoPoVxjo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1306659b587dc277866c7b69eb97e5f07864d8c4",
+        "rev": "d03088749a110d52a4739348f39a63f84bb0be14",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-unstable",
+        "ref": "nixos-25.11",
         "repo": "nixpkgs",
         "type": "github"
       }

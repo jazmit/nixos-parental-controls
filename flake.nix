@@ -2,7 +2,7 @@
   description = "Per-user parental controls for NixOS using blocky DNS proxy";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     black-hosts = {
       url = "github:StevenBlack/hosts";
       flake = false;

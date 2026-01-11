@@ -65,6 +65,26 @@ let
     in "${perUserBlocky}/bin/per-user-blocky ${defaultBlockyConfig} ${allUserCLIOptions}";
 
 
+  # Type definition for a time range (start and end time)
+  timeRangeType = types.submodule {
+    options = {
+      start = mkOption {
+        type = types.strMatching "[0-2][0-9]:[0-5][0-9]";
+        description = ''
+          Start time in HH:MM format (24-hour)
+        '';
+        example = "07:00";
+      };
+      end = mkOption {
+        type = types.strMatching "[0-2][0-9]:[0-5][0-9]";
+        description = ''
+          End time in HH:MM format (24-hour)
+        '';
+        example = "20:00";
+      };
+    };
+  };
+
   parentalConfigOptions = {
     options = {
       uid = mkOption {
@@ -111,6 +131,83 @@ let
         description = ''
           Whether to block commonly known domains serving adult content
           Currently TODO
+        '';
+      };
+      screen-time = mkOption {
+        type = types.submodule {
+          options = {
+            enable = mkEnableOption "screen time limits for this user";
+
+            weekdays = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = ''
+                Set schedule for Monday through Friday.
+                Explicit day settings override this.
+              '';
+              example = { start = "15:00"; end = "19:00"; };
+            };
+
+            weekend = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = ''
+                Set schedule for Saturday and Sunday.
+                Explicit day settings override this.
+              '';
+              example = { start = "09:00"; end = "21:00"; };
+            };
+
+            monday = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = "Allowed screen time on Monday";
+            };
+
+            tuesday = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = "Allowed screen time on Tuesday";
+            };
+
+            wednesday = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = "Allowed screen time on Wednesday";
+            };
+
+            thursday = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = "Allowed screen time on Thursday";
+            };
+
+            friday = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = "Allowed screen time on Friday";
+            };
+
+            saturday = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = "Allowed screen time on Saturday";
+            };
+
+            sunday = mkOption {
+              type = types.nullOr timeRangeType;
+              default = null;
+              description = "Allowed screen time on Sunday";
+            };
+          };
+        };
+        default = { enable = false; };
+        description = ''
+          Screen time schedule for this user. Users will be locked out
+          (unable to login) outside of their allowed times. Active sessions
+          will be terminated when screen time ends.
+
+          Days without a schedule will keep the user locked all day.
         '';
       };
     };
