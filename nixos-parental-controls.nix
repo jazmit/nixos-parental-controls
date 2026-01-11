@@ -64,7 +64,6 @@ let
 
     in "${perUserBlocky}/bin/per-user-blocky ${defaultBlockyConfig} ${allUserCLIOptions}";
 
-
   # Type definition for a time range (start and end time)
   timeRangeType = types.submodule {
     options = {
@@ -137,6 +136,16 @@ let
         type = types.submodule {
           options = {
             enable = mkEnableOption "screen time limits for this user";
+
+            warnings = mkOption {
+              type = types.listOf types.int;
+              default = [ 10 5 4 3 2 1 ];
+              description = ''
+                Minutes before screen time ends to show warnings.
+                Warnings are displayed as desktop notifications.
+              '';
+              example = [ 15 10 5 1 ];
+            };
 
             weekdays = mkOption {
               type = types.nullOr timeRangeType;
@@ -216,6 +225,11 @@ let
 in
 
 {
+  imports = [
+    ./net-nanny.nix
+    ./screen-time.nix
+  ];
+
   options = {
     services.parental-controls = {
       enable = mkEnableOption "Per-user parental controls";
@@ -244,18 +258,5 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    networking.nameservers = [ "127.0.0.1" ];
-    systemd.services.per-user-blocky = {
-      description = "DNS Proxy which switches configuration based on logged in users";
-      serviceConfig = {
-        WorkingDirectory = "${perUserBlocky}";
-        ExecStart = startDNSProxy;
-        AmbientCapabilities   = [ "CAP_NET_BIND_SERVICE" ];
-        CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
-      };
-      wantedBy = [ "multi-user.target" ];
-    };
-  };
 
 }
