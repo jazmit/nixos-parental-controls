@@ -8,42 +8,9 @@ let
 
   # Helper script to send notifications to a user's graphical sessions
   mkNotifyScript = userName: message: pkgs.writeShellScript "notify-${userName}" ''
-    # Get all sessions for the user
-    for session in $(${pkgs.systemd}/bin/loginctl list-sessions --no-legend | ${pkgs.gawk}/bin/awk '{print $1}'); do
-      session_user=$(${pkgs.systemd}/bin/loginctl show-session "$session" -p Name --value)
-
-      if [ "$session_user" = "${userName}" ]; then
-        # Get the session type
-        session_type=$(${pkgs.systemd}/bin/loginctl show-session "$session" -p Type --value)
-
-        # Only send notifications to graphical sessions
-        if [ "$session_type" = "wayland" ] || [ "$session_type" = "x11" ]; then
-          # Get the session's display
-          display=$(${pkgs.systemd}/bin/loginctl show-session "$session" -p Display --value)
-
-          # Get the user's UID
-          uid=$(${pkgs.coreutils}/bin/id -u ${userName})
-
-          # Get the DBUS session address for this user
-          dbus_addr=$(${pkgs.procps}/bin/pgrep -u "$uid" -a | ${pkgs.gnugrep}/bin/grep -m1 'dbus-daemon.*--session' | ${pkgs.gnused}/bin/sed -n 's/.*--address=\([^ ]*\).*/\1/p')
-
-          # Try to find DISPLAY from the session
-          if [ -n "$display" ]; then
-            export DISPLAY=":$display"
-          else
-            export DISPLAY=":0"
-          fi
-
-          # Set DBUS address if found
-          if [ -n "$dbus_addr" ]; then
-            export DBUS_SESSION_BUS_ADDRESS="$dbus_addr"
-          fi
-
-          # Send notification as the user
-          ${pkgs.su}/bin/su -s ${pkgs.bash}/bin/bash ${userName} -c "${pkgs.libnotify}/bin/notify-send -u critical -t 10000 'Screen Time' '${message}'" 2>/dev/null || true
-        fi
-      fi
-    done
+    uid=$(${pkgs.coreutils}/bin/id -u ${userName})
+    ${pkgs.sudo}/bin/sudo -u ${userName} DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
+      ${pkgs.libnotify}/bin/notify-send -u critical -t 10000 "Screen Time" "${message}"
   '';
 
   # Helper function to merge weekdays/weekend shortcuts with explicit day settings
