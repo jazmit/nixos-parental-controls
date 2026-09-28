@@ -7,7 +7,7 @@ let
   cfg = config.services.parental-controls;
 
   # Helper script to send notifications to a user's graphical sessions
-  mkNotifyScript = userName: message: pkgs.writeShellScript "notify-${userName}" ''
+  mkNotifyScript = userName: pkgs.writeShellScript "notify-${userName}" ''
     uid=$(${pkgs.coreutils}/bin/id -u ${userName})
     bus=/run/user/$uid/bus
     if [ ! -S "$bus" ]; then
@@ -17,7 +17,7 @@ let
 
     if ! ${pkgs.sudo}/bin/sudo -u ${userName} \
       XDG_RUNTIME_DIR=/run/user/$uid DBUS_SESSION_BUS_ADDRESS=unix:path=$bus \
-      ${pkgs.libnotify}/bin/notify-send -u critical -t 10000 "Screen Time" "${message}"; then
+      ${pkgs.libnotify}/bin/notify-send -u critical -t 10000 "Screen Time" "$1"; then
       echo "Screen time warning for ${userName} could not be delivered"
     fi
   '';
@@ -169,79 +169,70 @@ let
     in
       "${padZero hours}:${padZero minutes}";
 
-  # Generate warning timers and services for a user
-  mkWarningTimers = userName: userOpts:
+  # One calendar timer per user covers every configured warning time.
+  mkWarningEvents = userOpts:
     let
       schedule = mergeSchedule userOpts.screen-time;
       warnings = userOpts.screen-time.warnings;
-
-      # Convert day name to systemd day abbreviation
       dayToSystemd = {
         monday = "Mon"; tuesday = "Tue"; wednesday = "Wed";
         thursday = "Thu"; friday = "Fri"; saturday = "Sat"; sunday = "Sun";
       };
-
-      # Generate warning timers for a specific day
-      mkDayWarnings = day: timeRange:
+      dayNumber = {
+        monday = "1"; tuesday = "2"; wednesday = "3";
+        thursday = "4"; friday = "5"; saturday = "6"; sunday = "7";
+      };
+      mkDayEvents = day: timeRange:
+        if timeRange == null then [] else
         let
           endMinutes = timeToMinutes timeRange.end;
-
-          # Generate a warning timer for a specific warning interval
-          mkWarning = warningMinutes:
-            let
-              warningTimeMinutes = endMinutes - warningMinutes;
-            in
-              # Only create warning if it's after the start time
-              if warningTimeMinutes >= (timeToMinutes timeRange.start) then {
-                name = "parental-controls-warn-${userName}-${day}-${toString warningMinutes}min";
-                value = {
-                  description = "Warn ${userName} on ${day} (${toString warningMinutes} min before logout)";
-                  wantedBy = [ "timers.target" ];
-                  timerConfig = {
-                    OnCalendar = "${dayToSystemd.${day}} *-*-* ${minutesToTime warningTimeMinutes}:00";
-                    Persistent = false;  # Don't fire if system was off
-                    Unit = "parental-controls-warn-${userName}-${toString warningMinutes}min.service";
-                  };
-                };
-              } else null;
-
-          warningTimers = builtins.filter (x: x != null) (map mkWarning warnings);
+          validWarnings = builtins.filter
+            (minutes: endMinutes - minutes >= timeToMinutes timeRange.start)
+            warnings;
         in
-          warningTimers;
-
-      # Filter out days with no schedule and generate warning timers
-      daysWithSchedule = lib.filterAttrs (day: range: range != null) schedule;
-      allWarnings = builtins.filter (x: x != null) (lib.flatten (lib.mapAttrsToList mkDayWarnings daysWithSchedule));
-
+          map (minutes: let clock = minutesToTime (endMinutes - minutes); in {
+            inherit clock minutes;
+            day = dayNumber.${day};
+            calendar = "${dayToSystemd.${day}} *-*-* ${clock}:00";
+          }) validWarnings;
     in
-      if allWarnings == [] then {} else lib.listToAttrs allWarnings;
+      lib.flatten (lib.mapAttrsToList mkDayEvents schedule);
 
+  mkWarningTimer = userName: events: {
+    "parental-controls-warn-${userName}" = {
+      description = "Screen time warnings for ${userName}";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = map (event: event.calendar) events;
+        AccuracySec = "1s";
+        Persistent = false;
+        Unit = "parental-controls-warn-${userName}.service";
+      };
+    };
+  };
 
-  # Generate warning services for a user
-  mkWarningServices = userName: userOpts:
-    let
-      warnings = userOpts.screen-time.warnings;
-
-      # Generate a warning service for a specific warning interval
-      mkWarningService = warningMinutes:
-        let
-          message = if warningMinutes == 1 then
-            "Screen time ends in 1 minute!"
-          else
-            "Screen time ends in ${toString warningMinutes} minutes!";
-        in {
-          name = "parental-controls-warn-${userName}-${toString warningMinutes}min";
-          value = {
-            description = "Warn ${userName} (${toString warningMinutes} min before logout)";
-            serviceConfig = {
-              Type = "oneshot";
-              ExecStart = mkNotifyScript userName message;
-            };
-          };
-        };
-
-    in
-      if warnings == [] then {} else lib.listToAttrs (map mkWarningService warnings);
+  mkWarningService = userName: events: {
+    "parental-controls-warn-${userName}" = {
+      description = "Warn ${userName} before screen time ends";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "warn-${userName}" ''
+          case "$(${pkgs.coreutils}/bin/date '+%u %H:%M')" in
+            ${lib.concatMapStringsSep "\n" (event: ''
+              "${event.day} ${event.clock}")
+                message="Screen time ends in ${toString event.minutes} minute${if event.minutes == 1 then "" else "s"}!"
+                ;;
+            '') events}
+            *)
+              echo "Skipping stale screen time warning for ${userName}"
+              exit 0
+              ;;
+          esac
+          exec ${mkNotifyScript userName} "$message"
+        '';
+      };
+    };
+  };
 
 in
 
@@ -279,7 +270,8 @@ in
       lib.mapAttrsToList (userName: userOpts:
         if userOpts.screen-time.enable then
           # Merge lock/unlock services with warning services
-          (mkWarningServices userName userOpts) // {
+          (let events = mkWarningEvents userOpts;
+           in if events == [] then {} else mkWarningService userName events) // {
           # Unlock service
           "parental-controls-unlock-${userName}" = {
             description = "Unlock user ${userName} for screen time";
@@ -321,7 +313,9 @@ in
       lib.mapAttrsToList (userName: userOpts:
         if userOpts.screen-time.enable then
           # Merge lock/unlock timers with warning timers
-          (mkScreenTimeTimers userName userOpts) // (mkWarningTimers userName userOpts)
+          (mkScreenTimeTimers userName userOpts) //
+          (let events = mkWarningEvents userOpts;
+           in if events == [] then {} else mkWarningTimer userName events)
         else {}
       ) cfg.per-user
     );
