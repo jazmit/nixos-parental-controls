@@ -1,5 +1,10 @@
 # NixOS Parental Controls
 
+## Development
+
+Changes made by Mycroft in its local checkout are committed as
+`Mycroft <jazmit@users.noreply.github.com>`.
+
 ## Who is it for?
 
 If you want to give young children access to your NixOS desktop machines, this might be useful for you.

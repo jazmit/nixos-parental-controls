@@ -9,8 +9,17 @@ let
   # Helper script to send notifications to a user's graphical sessions
   mkNotifyScript = userName: message: pkgs.writeShellScript "notify-${userName}" ''
     uid=$(${pkgs.coreutils}/bin/id -u ${userName})
-    ${pkgs.sudo}/bin/sudo -u ${userName} DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
-      ${pkgs.libnotify}/bin/notify-send -u critical -t 10000 "Screen Time" "${message}"
+    bus=/run/user/$uid/bus
+    if [ ! -S "$bus" ]; then
+      echo "Skipping screen time warning for ${userName}: no user DBus session"
+      exit 0
+    fi
+
+    if ! ${pkgs.sudo}/bin/sudo -u ${userName} \
+      XDG_RUNTIME_DIR=/run/user/$uid DBUS_SESSION_BUS_ADDRESS=unix:path=$bus \
+      ${pkgs.libnotify}/bin/notify-send -u critical -t 10000 "Screen Time" "${message}"; then
+      echo "Screen time warning for ${userName} could not be delivered"
+    fi
   '';
 
   # Helper function to merge weekdays/weekend shortcuts with explicit day settings
