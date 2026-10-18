@@ -1,5 +1,10 @@
 # NixOS Parental Controls
 
+## Development
+
+Changes made by Mycroft in its local checkout are committed as
+`Mycroft <jazmit@users.noreply.github.com>`.
+
 ## Who is it for?
 
 If you want to give young children access to your NixOS desktop machines, this might be useful for you.
@@ -112,3 +117,9 @@ Screen time limits use systemd timers and services to:
 - **Time accuracy**: Assumes system time is accurate (enable NTP)
 - **Physical access**: Children with physical access can boot from USB or change system time
 - **Notification reliability**: Warnings may not appear if the desktop environment doesn't support notifications or if notification daemon is not running
+
+Each scheduled user has one calendar timer for all configured warning times.
+The warning service only attempts to notify a user with an available session
+bus; a missing bus or failed desktop notification is logged and does not mark
+the service failed. Account locking and unlocking use separate timers and
+services, so warning delivery cannot prevent the scheduled lock.
